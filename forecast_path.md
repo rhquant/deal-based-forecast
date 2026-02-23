@@ -2,204 +2,268 @@
 
 ## Purpose
 
-This tool provides a deal-backed "path to forecast" view for a SaaS GTM executive at end of quarter. It is a closest-to-the-pin forecast, not an expected value model. The user manually selects which open deals are "In" (committed) and which are "Best Case" (upside), and the tool calculates two totals in real time.
+A deal-backed "path to forecast" tool for a SaaS GTM executive at end of quarter. This is a closest-to-the-pin forecast — not an expected value model. The user manually toggles open pipeline deals as **In** (committed) or **Best Case** (upside), and totals update in real time.
 
-**Closest to the Pin** = Closed Won ARR (auto) + manually selected "In" deals  
-**Best Case** = Closest to the Pin + manually selected "Best Case" deals
+Two views are shown side by side: a **total forecast** across all deal types, and a **New Business-only** view filtered to new logos.
+
+---
+
+## Stack
+
+- **React 18 + Vite 5** — standalone app, no routing, single page
+- **Tailwind CSS v3** — utility classes only; brand colors registered as custom tokens
+- **Brand colors** — defined in `brand.md`, registered in `tailwind.config.js`
+- **No backend** — all state is client-side, no persistence
+- **Data** — two CSV files fetched at runtime from `public/data/` via `fetch()`
+
+---
+
+## Deal Types
+
+Every deal (open pipeline and closed won) carries a `deal_type` field with one of two values:
+
+| Value | Description |
+|---|---|
+| `New Business` | New logo acquisition |
+| `Expansion` | Expansion into an existing customer account |
+
+This field drives the New Business bridge and the Type badge in the deal table.
 
 ---
 
 ## Data Sources
 
-Two Salesforce reports are required. Both should be scoped to the **current fiscal quarter**.
+Two Salesforce CSV exports are required, scoped to the **current fiscal quarter**, placed in `public/data/`.
 
-### Report 1: Closed Won Deals (`closed_won_report.csv`)
+### Report 1: Closed Won (`closed_won_placeholder.csv`)
 
-Filters:
-- Stage = Closed Won
-- Close Date = current fiscal quarter
+Filters: Stage = Closed Won, Close Date = current fiscal quarter
 
-Required fields:
-
-| Field Label in SFDC | Expected CSV Column Name |
+| CSV Column | SFDC Field |
 |---|---|
-| Opportunity Name | `opportunity_name` |
-| Account Name | `account_name` |
-| ARR (Annual Recurring Revenue) | `arr` |
-| Close Date | `close_date` |
-| Stage | `stage` |
+| `opportunity_name` | Opportunity Name |
+| `account_name` | Account Name |
+| `arr` | ARR (Annual Recurring Revenue) |
+| `close_date` | Close Date (YYYY-MM-DD) |
+| `stage` | Stage |
+| `deal_type` | Deal Type — `New Business` or `Expansion` |
 
-> **Placeholder**: Until the live report is connected, use `data/closed_won_placeholder.csv`. Total ARR from this report feeds directly into the Closest to the Pin baseline — individual deals are not displayed.
+### Report 2: Open Pipeline (`open_pipeline_placeholder.csv`)
 
-### Report 2: Open Pipeline Deals (`open_pipeline_report.csv`)
+Filters: Stage != Closed Won/Lost, Close Date = current fiscal quarter, ARR >= $60K
 
-Filters:
-- Stage != Closed Won, Closed Lost
-- Close Date = current fiscal quarter
-- ARR >= 60,000
-
-Required fields:
-
-| Field Label in SFDC | Expected CSV Column Name |
+| CSV Column | SFDC Field |
 |---|---|
-| Opportunity Name | `opportunity_name` |
-| Account Name | `account_name` |
-| ARR (Annual Recurring Revenue) | `arr` |
-| Close Date | `close_date` |
-| Stage | `stage` |
-| VP Deal Forecast | `vp_forecast` |
+| `opportunity_name` | Opportunity Name |
+| `account_name` | Account Name |
+| `arr` | ARR (Annual Recurring Revenue) |
+| `close_date` | Close Date (YYYY-MM-DD) |
+| `stage` | Stage |
+| `vp_forecast` | VP Deal Forecast — `Commit`, `Best Case`, or `Most Likely` |
+| `deal_type` | Deal Type — `New Business` or `Expansion` |
 
-> **Placeholder**: Until the live report is connected, use `data/open_pipeline_placeholder.csv`. Valid values for `vp_forecast`: `Commit`, `Best Case`, `Most Likely`.
+> **To connect live data:** drop replacement CSVs into `public/data/` with matching column names. No code changes needed.
 
 ---
 
 ## Placeholder Data
 
-Create the following two CSV files under `data/` when initializing the tool.
-
-### `data/closed_won_placeholder.csv`
+### `public/data/closed_won_placeholder.csv`
 
 ```
-opportunity_name,account_name,arr,close_date,stage
-Acme Corp Expansion,Acme Corp,185000,2025-03-28,Closed Won
-Globex New Logo,Globex,95000,2025-03-15,Closed Won
-Initech Renewal Uplift,Initech,120000,2025-03-20,Closed Won
-Umbrella Corp New,Umbrella Corp,240000,2025-03-10,Closed Won
+opportunity_name,account_name,arr,close_date,stage,deal_type
+Acme Corp Expansion,Acme Corp,185000,2025-03-28,Closed Won,Expansion
+Globex New Logo,Globex,95000,2025-03-15,Closed Won,New Business
+Initech Renewal Uplift,Initech,120000,2025-03-20,Closed Won,Expansion
+Umbrella Corp New,Umbrella Corp,240000,2025-03-10,Closed Won,New Business
 ```
 
-### `data/open_pipeline_placeholder.csv`
+### `public/data/open_pipeline_placeholder.csv`
 
 ```
-opportunity_name,account_name,arr,close_date,stage,vp_forecast
-Stark Industries Expansion,Stark Industries,310000,2025-03-31,Negotiation / Review,Commit
-Wayne Enterprises New Logo,Wayne Enterprises,195000,2025-03-31,Negotiation / Review,Commit
-Cyberdyne New Logo,Cyberdyne Systems,145000,2025-03-28,Proposal / Price Quote,Best Case
-Oscorp Expansion,Oscorp,125000,2025-03-31,Proposal / Price Quote,Most Likely
-Soylent Corp New Logo,Soylent Corp,98000,2025-03-29,Negotiation / Review,Best Case
-Weyland-Yutani Renewal,Weyland-Yutani,87000,2025-03-25,Proposal / Price Quote,Most Likely
-Nakatomi Trading New Logo,Nakatomi Trading,74000,2025-03-31,Proposal / Price Quote,Best Case
-Momcorp Expansion,Momcorp,62000,2025-03-28,Needs Analysis,Most Likely
+opportunity_name,account_name,arr,close_date,stage,vp_forecast,deal_type
+Stark Industries Expansion,Stark Industries,310000,2025-03-31,Negotiation / Review,Commit,Expansion
+Wayne Enterprises New Logo,Wayne Enterprises,195000,2025-03-31,Negotiation / Review,Commit,New Business
+Cyberdyne New Logo,Cyberdyne Systems,145000,2025-03-28,Proposal / Price Quote,Best Case,New Business
+Oscorp Expansion,Oscorp,125000,2025-03-31,Proposal / Price Quote,Most Likely,Expansion
+Soylent Corp New Logo,Soylent Corp,98000,2025-03-29,Negotiation / Review,Best Case,New Business
+Weyland-Yutani Renewal,Weyland-Yutani,87000,2025-03-25,Proposal / Price Quote,Most Likely,Expansion
+Nakatomi Trading New Logo,Nakatomi Trading,74000,2025-03-31,Proposal / Price Quote,Best Case,New Business
+Momcorp Expansion,Momcorp,62000,2025-03-28,Needs Analysis,Most Likely,Expansion
 ```
 
 ---
 
 ## Layout
 
-The UI is structured top to bottom in three sections:
-
 ```
-┌─────────────────────────────────────────────────────┐
-│  SECTION 1: Forecast Totals (header bar)            │
-│  Closest to the Pin: $X.XM   Best Case: $X.XM       │
-├─────────────────────────────────────────────────────┤
-│  SECTION 2: Summary Tables                          │
-│  [ In Deals List ]       [ Best Case Deals List ]   │
-├─────────────────────────────────────────────────────┤
-│  SECTION 3: Deal Table (open pipeline, ARR > $60K)  │
-│  [In] [BC] | Account | Opp | Stage | VP Fcst | ARR  │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  SECTION 1: Dual Forecast Bridges                                    │
+│  [ Q1 Forecast — All Deals ] │ [ New Business — New Logos Only ]     │
+│  Closed Won        $640K     │  Closed Won        $335K              │
+│  + In Deals        $505K     │  + In Deals        $195K              │
+│  ────────────────────────    │  ──────────────────────────           │
+│  = CTTP            $1.1M  ···│  = CTTP            $530K  ···         │
+│  + Most Likely     $0        │  + Most Likely     $0                 │
+│  ────────────────────────    │  ──────────────────────────           │
+│  = Upside          $1.1M  ···│  = Upside          $530K  ···         │
+├──────────────────────────────────────────────────────────────────────┤
+│  SECTION 2: Summary Tables                                           │
+│  [ In — Committed ]          │  [ Best Case — Upside ]               │
+├──────────────────────────────────────────────────────────────────────┤
+│  SECTION 3: Open Pipeline Deal Table                                 │
+│  [In] [BC] │ Account │ Opp │ Stage │ Type │ VP Forecast │ ARR │ Date │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Section 1: Forecast Totals
+## Section 1: Forecast Bridges
 
-Display two large numbers side by side.
+Two bridges displayed side by side. Left = all deals. Right = New Business only. Both react live to toggle changes.
 
-| Metric | Calculation |
-|---|---|
-| **Closest to the Pin** | `sum(closed_won.arr)` + `sum(arr for deals where in_toggle = true)` |
-| **Best Case** | Closest to the Pin + `sum(arr for deals where best_case_toggle = true)` |
+### Bridge Math (additive waterfall)
 
-- Numbers should display as currency, formatted to one decimal (e.g., `$4.2M`)
-- Both numbers update instantly whenever a toggle changes in the deal table
-- Closed Won total should be displayed as a sub-label beneath Closest to the Pin (e.g., "Closed Won baseline: $640K")
+```
+  Closed Won          $XXX      ← sum of all closed won deals (auto)
++ In Deals            $XXX      ← sum of open deals with inToggle = true
+────────────────────────────
+= CTTP                $X.XM     ← Closest to the Pin
++ Most Likely         $XXX      ← sum of open deals with bestCaseToggle = true
+────────────────────────────
+= Upside              $X.XM     ← CTTP + Most Likely toggled deals
+```
+
+### Comparison Columns (on CTTP and Upside rows only)
+
+Each subtotal row shows two comparisons inline:
+
+```
+xx% Y/Y (+/-$xx)   ·   xx% vs Plan (+/-$xx)
+```
+
+| Comparison | Current placeholder | To update |
+|---|---|---|
+| Y/Y | $1,000,000 | `yyCompare` prop on `<ForecastTotals>` |
+| vs Plan | $1,500,000 | `plan` prop on `<ForecastTotals>` |
+
+- Positive delta → Matcha green
+- Negative delta → muted sesame
+
+### Visual Differentiation
+
+| Bridge | Background | Purpose |
+|---|---|---|
+| Q1 Forecast | Licorice `#11110D` (near-black) | All deal types |
+| New Business | Fern `#203524` (dark green) | New logos only |
 
 ---
 
 ## Section 2: Summary Tables
 
-Two side-by-side tables that update reactively as the user toggles deals below.
+Two side-by-side tables on a Sesame background. Update reactively as deals are toggled.
 
-### "In" Deals Table (left)
+- **Left — "In — Committed"**: deals with `inToggle = true`
+- **Right — "Best Case — Upside"**: deals with `bestCaseToggle = true`
 
-Shows all open deals currently toggled as **In**.
+Columns: Account | Opportunity | ARR. Footer: Total ARR.
 
-Columns: Account Name | Opportunity Name | ARR
-
-Footer row: **Total** | — | `sum(arr)`
-
-### "Best Case" Deals Table (right)
-
-Shows all open deals currently toggled as **Best Case**.
-
-Columns: Account Name | Opportunity Name | ARR
-
-Footer row: **Total** | — | `sum(arr)`
-
-If no deals are selected for a bucket, display: *"No deals selected"*
+No deal-type breakout in these tables.
 
 ---
 
 ## Section 3: Deal Table
 
-Displays all open pipeline deals with ARR > $60K for the current quarter.
+All open pipeline deals, default sort ARR descending. All column headers are clickable to re-sort.
 
-### Columns (left to right)
+### Columns
 
-| Column | Description |
-|---|---|
-| **In** | Toggle button. When active, deal counts toward Closest to the Pin. |
-| **Best Case** | Toggle button. When active, deal counts toward Best Case upside. |
-| **Account Name** | `account_name` from report |
-| **Opportunity Name** | `opportunity_name` from report |
-| **Stage** | `stage` from report |
-| **VP Forecast** | `vp_forecast` from report — display with color coding: Commit = green, Best Case = yellow, Most Likely = blue |
-| **ARR** | `arr` from report, formatted as currency |
-| **Close Date** | `close_date` from report, formatted as MMM DD |
+| Column | Source | Notes |
+|---|---|---|
+| **In** | Toggle | Adds deal to CTTP. Mutually exclusive with BC. |
+| **BC** | Toggle | Adds deal to Most Likely / Upside. Mutually exclusive with In. |
+| **Account** | `account_name` | |
+| **Opportunity** | `opportunity_name` | |
+| **Stage** | `stage` | |
+| **Type** | `deal_type` | Badge: New Business = matcha, Expansion = sesame |
+| **VP Forecast** | `vp_forecast` | Badge: Commit = green, Best Case = yellow, Most Likely = neutral |
+| **ARR** | `arr` | Right-aligned, formatted as $XK or $X.XM |
+| **Close Date** | `close_date` | Formatted as MMM D |
 
 ### Toggle Behavior
 
-- **In** and **Best Case** are mutually exclusive per deal — selecting one automatically deactivates the other
-- Toggles are styled as small pill buttons to the left of the deal row
-- Active state should be visually distinct (filled/colored); inactive state should be outlined/ghost
-- **In** button color: solid blue when active
-- **Best Case** button color: solid amber when active
-
-### Sort Order
-
-Default sort: ARR descending. Allow column header click to re-sort.
-
-### Filtering
-
-- Only show deals with `arr >= 60000`
-- Only show open deals (exclude Closed Won / Closed Lost)
+- Deals where `vp_forecast === 'Commit'` are pre-toggled **In** on load
+- All other deals start with both toggles off
+- In and BC are mutually exclusive per deal — activating one clears the other
 
 ---
 
-## Implementation Notes
+## Brand Colors
 
-- This is a single-page tool, no routing needed
-- All state is managed client-side; no backend persistence required
-- The tool should be buildable as a React component or standalone HTML/JS file
-- When SFDC reports become available, the CSV paths in `data/` are the only thing that needs to change — the logic should be data-agnostic
-- Currency formatting helper: values >= 1,000,000 display as `$X.XM`; values < 1,000,000 display as `$XXXK`
-- The tool is used by a single executive at end of quarter — optimize for clarity and speed of use, not configurability
-- Default state: all toggles off; user builds their forecast from scratch each session
+Defined in `brand.md`. Registered in `tailwind.config.js` under `theme.extend.colors`.
+
+| Token | Hex | Usage |
+|---|---|---|
+| `licorice` | `#11110D` | Total forecast bridge background, primary text |
+| `coconut` | `#FFFFFF` | Page background, text on dark |
+| `matcha` | `#D1F470` | CTTP value, New Business type badge background |
+| `pineapple` | `#FEEB7E` | Upside value, BC toggle active, Best Case VP badge |
+| `sesame-100` | `#F5F5F2` | Page header, summary tables background |
+| `sesame-200` | `#E5E5E2` | Table header row, borders |
+| `sesame-500–700` | various | Body text, muted labels |
+| `cactus` | `#A1D78F` | Commit VP badge background |
+| `shamrock` | `#2D4C33` | In toggle active, Commit VP badge text |
+| `fern` | `#203524` | New Business bridge background |
+
+---
+
+## Currency Formatting
+
+```
+value >= $1,000,000  →  $X.XM  (one decimal)
+value <  $1,000,000  →  $XXXK  (rounded to nearest $1K)
+value === 0          →  $0
+```
 
 ---
 
 ## File Structure
 
 ```
-forecast_path/
-├── forecast_path.md         # This file — spec and instructions
-├── data/
-│   ├── closed_won_placeholder.csv
-│   └── open_pipeline_placeholder.csv
-├── components/
-│   ├── ForecastTotals.jsx   # Section 1
-│   ├── SummaryTables.jsx    # Section 2
-│   └── DealTable.jsx        # Section 3
-└── ForecastPath.jsx         # Root component, loads data, owns state
+deal-backed-forecast/
+├── brand.md                          # Brand color reference
+├── forecast_path.md                  # This file
+├── package.json                      # "forecast-path", React + Vite + Tailwind
+├── vite.config.js
+├── tailwind.config.js                # Brand colors registered here
+├── postcss.config.js
+├── index.html
+├── public/
+│   └── data/
+│       ├── closed_won_placeholder.csv
+│       └── open_pipeline_placeholder.csv
+└── src/
+    ├── main.jsx
+    ├── index.css                     # @tailwind directives only
+    ├── App.jsx                       # Root — owns all state, computes totals
+    └── components/
+        ├── ForecastTotals.jsx        # Section 1 — bridge waterfall
+        ├── SummaryTables.jsx         # Section 2 — In / BC deal lists
+        └── DealTable.jsx             # Section 3 — sortable pipeline table
 ```
+
+---
+
+## Running Locally
+
+```bash
+npm install
+npm run dev
+# → http://localhost:5173
+```
+
+---
+
+## Repo
+
+`https://github.com/rhquant/deal-based-forecast`
