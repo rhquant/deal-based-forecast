@@ -21,51 +21,61 @@ function fmtDelta(actual, compare) {
   return { str: `${d >= 0 ? '+' : '−'}${formatted}`, positive: d >= 0 }
 }
 
+// Divider spans all 4 grid columns
 function Divider() {
-  return <div className="border-t border-sesame-700 my-0.5" />
+  return <div className="col-span-4 border-t border-sesame-700" />
 }
 
+// Regular additive row — no comparisons
 function LineRow({ op, label, value }) {
   return (
-    <div className="flex items-center gap-3 py-1">
-      <span className="text-sesame-600 text-xs w-3 shrink-0 text-right">{op}</span>
-      <span className="text-sesame-500 text-xs uppercase tracking-widest w-28 shrink-0">{label}</span>
-      <span className="text-sesame-300 text-xs tabular-nums">{fmt(value)}</span>
-    </div>
+    <>
+      <span className="text-sesame-600 text-xs text-right">{op}</span>
+      <span className="text-sesame-500 text-xs uppercase tracking-widest">{label}</span>
+      <span className="text-sesame-300 text-xs tabular-nums text-right">{fmt(value)}</span>
+      <span />
+    </>
   )
 }
 
+// Subtotal row — bold value + Y/Y % + Plan $
 function TotalRow({ label, value, valueClass }) {
   const yy = fmtPct(value, YY_COMPARE)
   const pl = fmtDelta(value, PLAN)
 
   return (
-    <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 py-1.5">
-      <span className="text-sesame-600 text-xs w-3 shrink-0 text-right">=</span>
-      <span className="text-sesame-300 text-xs uppercase tracking-widest w-28 shrink-0 font-bold">{label}</span>
-      <span className={`text-sm font-bold tabular-nums ${valueClass}`}>{fmt(value)}</span>
-
-      <div className="flex items-baseline gap-3 text-xs">
+    <>
+      <span className="text-sesame-600 text-xs text-right">=</span>
+      <span className="text-sesame-300 text-xs uppercase tracking-widest font-bold">{label}</span>
+      <span className={`text-xs font-bold tabular-nums text-right ${valueClass}`}>{fmt(value)}</span>
+      <span className="flex items-center gap-2 text-xs pl-4">
         <span className="text-sesame-600 uppercase tracking-wider text-[10px]">Y/Y</span>
         <span className={`tabular-nums font-medium ${yy.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>
           {yy.str}
         </span>
-
-        <span className="text-sesame-700">·</span>
-
+        <span className="text-sesame-700 mx-1">·</span>
         <span className="text-sesame-600 uppercase tracking-wider text-[10px]">Plan</span>
         <span className="text-sesame-400 tabular-nums">{fmt(PLAN)}</span>
         <span className={`tabular-nums font-medium ${pl.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>
           ({pl.str})
         </span>
-      </div>
-    </div>
+      </span>
+    </>
   )
 }
 
 export default function ForecastTotals({ closedWonTotal, inTotal, closestToPin, mostLikelyTotal, upside }) {
   return (
-    <div className="bg-licorice px-6 py-4">
+    <div
+      className="bg-licorice px-6 py-4"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1rem 8rem 5rem 1fr',
+        columnGap: '0.75rem',
+        rowGap: '0.5rem',
+        alignItems: 'center',
+      }}
+    >
       <LineRow op=""  label="Closed Won"  value={closedWonTotal} />
       <LineRow op="+" label="In Deals"    value={inTotal} />
       <Divider />
