@@ -8,6 +8,12 @@ const fmt = (v) => {
     : `$${Math.round(v / 1000)}K`
 }
 
+function fmtPct(actual, compare) {
+  if (compare === 0) return { str: '—', positive: true }
+  const pct = Math.round(((actual - compare) / compare) * 100)
+  return { str: `${pct >= 0 ? '+' : ''}${pct}%`, positive: pct >= 0 }
+}
+
 function fmtDelta(actual, compare) {
   const d = actual - compare
   const abs = Math.abs(d)
@@ -21,32 +27,31 @@ function Divider() {
 
 function LineRow({ op, label, value }) {
   return (
-    <div className="flex items-center gap-3 py-1.5">
+    <div className="flex items-center gap-3 py-1">
       <span className="text-sesame-600 text-xs w-3 shrink-0 text-right">{op}</span>
       <span className="text-sesame-500 text-xs uppercase tracking-widest w-28 shrink-0">{label}</span>
-      <span className="text-sesame-300 text-sm font-medium tabular-nums">{fmt(value)}</span>
+      <span className="text-sesame-300 text-xs tabular-nums">{fmt(value)}</span>
     </div>
   )
 }
 
 function TotalRow({ label, value, valueClass }) {
-  const yy = fmtDelta(value, YY_COMPARE)
+  const yy = fmtPct(value, YY_COMPARE)
   const pl = fmtDelta(value, PLAN)
 
   return (
-    <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 py-2">
+    <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 py-1.5">
       <span className="text-sesame-600 text-xs w-3 shrink-0 text-right">=</span>
-      <span className="text-sesame-300 text-[11px] uppercase tracking-widest w-28 shrink-0 font-bold">{label}</span>
-      <span className={`text-2xl font-bold tabular-nums ${valueClass}`}>{fmt(value)}</span>
+      <span className="text-sesame-300 text-xs uppercase tracking-widest w-28 shrink-0 font-bold">{label}</span>
+      <span className={`text-sm font-bold tabular-nums ${valueClass}`}>{fmt(value)}</span>
 
-      <div className="ml-2 flex items-baseline gap-4 text-xs">
+      <div className="flex items-baseline gap-3 text-xs">
         <span className="text-sesame-600 uppercase tracking-wider text-[10px]">Y/Y</span>
-        <span className="text-sesame-400 tabular-nums">{fmt(YY_COMPARE)}</span>
         <span className={`tabular-nums font-medium ${yy.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>
-          ({yy.str})
+          {yy.str}
         </span>
 
-        <span className="text-sesame-700 mx-1">·</span>
+        <span className="text-sesame-700">·</span>
 
         <span className="text-sesame-600 uppercase tracking-wider text-[10px]">Plan</span>
         <span className="text-sesame-400 tabular-nums">{fmt(PLAN)}</span>
@@ -61,13 +66,13 @@ function TotalRow({ label, value, valueClass }) {
 export default function ForecastTotals({ closedWonTotal, inTotal, closestToPin, mostLikelyTotal, upside }) {
   return (
     <div className="bg-licorice px-6 py-4">
-      <LineRow op=""  label="Closed Won"   value={closedWonTotal} />
-      <LineRow op="+" label="In Deals"     value={inTotal} />
+      <LineRow op=""  label="Closed Won"  value={closedWonTotal} />
+      <LineRow op="+" label="In Deals"    value={inTotal} />
       <Divider />
-      <TotalRow label="CTTP"        value={closestToPin}    valueClass="text-matcha" />
-      <LineRow op="+" label="Most Likely"  value={mostLikelyTotal} />
+      <TotalRow label="CTTP"       value={closestToPin}   valueClass="text-matcha" />
+      <LineRow op="+" label="Most Likely" value={mostLikelyTotal} />
       <Divider />
-      <TotalRow label="Upside"      value={upside}          valueClass="text-pineapple" />
+      <TotalRow label="Upside"     value={upside}         valueClass="text-pineapple" />
     </div>
   )
 }
