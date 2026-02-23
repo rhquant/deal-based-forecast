@@ -40,25 +40,26 @@ function LineRow({ op, label, value }) {
 
 // Subtotal row — bold value + Y/Y % + Plan $
 function TotalRow({ label, value, valueClass }) {
-  const yy = fmtPct(value, YY_COMPARE)
-  const pl = fmtDelta(value, PLAN)
+  const yyPct   = fmtPct(value, YY_COMPARE)
+  const yyDelta = fmtDelta(value, YY_COMPARE)
+  const plPct   = fmtPct(value, PLAN)
+  const plDelta = fmtDelta(value, PLAN)
 
   return (
     <>
       <span className="text-sesame-600 text-xs text-right">=</span>
       <span className="text-sesame-300 text-xs uppercase tracking-widest font-bold">{label}</span>
       <span className={`text-xs font-bold tabular-nums text-right ${valueClass}`}>{fmt(value)}</span>
-      <span className="flex items-center gap-2 text-xs pl-4">
+      <span className="flex items-center gap-1.5 text-xs pl-4">
+        <span className={`tabular-nums font-medium ${yyPct.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>{yyPct.str}</span>
         <span className="text-sesame-600 uppercase tracking-wider text-[10px]">Y/Y</span>
-        <span className={`tabular-nums font-medium ${yy.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>
-          {yy.str}
-        </span>
+        <span className={`tabular-nums ${yyDelta.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>({yyDelta.str})</span>
+
         <span className="text-sesame-700 mx-1">·</span>
-        <span className="text-sesame-600 uppercase tracking-wider text-[10px]">Plan</span>
-        <span className="text-sesame-400 tabular-nums">{fmt(PLAN)}</span>
-        <span className={`tabular-nums font-medium ${pl.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>
-          ({pl.str})
-        </span>
+
+        <span className={`tabular-nums font-medium ${plPct.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>{plPct.str}</span>
+        <span className="text-sesame-600 uppercase tracking-wider text-[10px]">vs Plan</span>
+        <span className={`tabular-nums ${plDelta.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>({plDelta.str})</span>
       </span>
     </>
   )
