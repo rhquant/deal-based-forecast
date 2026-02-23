@@ -70,11 +70,11 @@ export default function App() {
     })
   }, [deals, sortConfig])
 
-  const closedWonTotal = closedWonDeals.reduce((s, d) => s + d.arr, 0)
-  const inTotal = deals.filter(d => d.inToggle).reduce((s, d) => s + d.arr, 0)
-  const bcTotal = deals.filter(d => d.bestCaseToggle).reduce((s, d) => s + d.arr, 0)
-  const closestToPin = closedWonTotal + inTotal
-  const bestCase = closestToPin + bcTotal
+  const closedWonTotal   = closedWonDeals.reduce((s, d) => s + d.arr, 0)
+  const inTotal          = deals.filter(d => d.inToggle).reduce((s, d) => s + d.arr, 0)
+  const mostLikelyTotal  = deals.filter(d => d.bestCaseToggle).reduce((s, d) => s + d.arr, 0)
+  const closestToPin     = closedWonTotal + inTotal
+  const upside           = closestToPin + mostLikelyTotal
 
   const inDeals = deals.filter(d => d.inToggle)
   const bcDeals = deals.filter(d => d.bestCaseToggle)
@@ -103,9 +103,11 @@ export default function App() {
       </div>
 
       <ForecastTotals
-        closestToPin={closestToPin}
-        bestCase={bestCase}
         closedWonTotal={closedWonTotal}
+        inTotal={inTotal}
+        closestToPin={closestToPin}
+        mostLikelyTotal={mostLikelyTotal}
+        upside={upside}
       />
 
       <SummaryTables inDeals={inDeals} bcDeals={bcDeals} />
