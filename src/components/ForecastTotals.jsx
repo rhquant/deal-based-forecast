@@ -1,6 +1,3 @@
-const YY_COMPARE = 1_000_000
-const PLAN       = 1_500_000
-
 const fmt = (v) => {
   if (v === 0) return '$0'
   return Math.abs(v) >= 1_000_000
@@ -21,12 +18,10 @@ function fmtDelta(actual, compare) {
   return { str: `${d >= 0 ? '+' : '−'}${formatted}`, positive: d >= 0 }
 }
 
-// Divider spans all 4 grid columns
 function Divider() {
   return <div className="col-span-4 border-t border-sesame-700" />
 }
 
-// Regular additive row — no comparisons
 function LineRow({ op, label, value }) {
   return (
     <>
@@ -38,12 +33,11 @@ function LineRow({ op, label, value }) {
   )
 }
 
-// Subtotal row — bold value + Y/Y % + Plan $
-function TotalRow({ label, value, valueClass }) {
-  const yyPct   = fmtPct(value, YY_COMPARE)
-  const yyDelta = fmtDelta(value, YY_COMPARE)
-  const plPct   = fmtPct(value, PLAN)
-  const plDelta = fmtDelta(value, PLAN)
+function TotalRow({ label, value, valueClass, yyCompare, plan }) {
+  const yyPct   = fmtPct(value, yyCompare)
+  const yyDelta = fmtDelta(value, yyCompare)
+  const plPct   = fmtPct(value, plan)
+  const plDelta = fmtDelta(value, plan)
 
   return (
     <>
@@ -54,9 +48,7 @@ function TotalRow({ label, value, valueClass }) {
         <span className={`tabular-nums font-medium ${yyPct.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>{yyPct.str}</span>
         <span className="text-sesame-600 uppercase tracking-wider text-[10px]">Y/Y</span>
         <span className={`tabular-nums ${yyDelta.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>({yyDelta.str})</span>
-
         <span className="text-sesame-700 mx-1">·</span>
-
         <span className={`tabular-nums font-medium ${plPct.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>{plPct.str}</span>
         <span className="text-sesame-600 uppercase tracking-wider text-[10px]">vs Plan</span>
         <span className={`tabular-nums ${plDelta.positive ? 'text-matcha-400' : 'text-sesame-500'}`}>({plDelta.str})</span>
@@ -65,25 +57,43 @@ function TotalRow({ label, value, valueClass }) {
   )
 }
 
-export default function ForecastTotals({ closedWonTotal, inTotal, closestToPin, mostLikelyTotal, upside }) {
+export default function ForecastTotals({
+  closedWonTotal,
+  inTotal,
+  closestToPin,
+  mostLikelyTotal,
+  upside,
+  title,
+  subtitle,
+  wrapperClass = 'bg-licorice',
+  yyCompare = 1_000_000,
+  plan = 1_500_000,
+}) {
   return (
-    <div
-      className="bg-licorice px-6 py-4"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1rem 8rem 5rem 1fr',
-        columnGap: '0.75rem',
-        rowGap: '0.5rem',
-        alignItems: 'center',
-      }}
-    >
-      <LineRow op=""  label="Closed Won"  value={closedWonTotal} />
-      <LineRow op="+" label="In Deals"    value={inTotal} />
-      <Divider />
-      <TotalRow label="CTTP"       value={closestToPin}   valueClass="text-matcha" />
-      <LineRow op="+" label="Most Likely" value={mostLikelyTotal} />
-      <Divider />
-      <TotalRow label="Upside"     value={upside}         valueClass="text-pineapple" />
+    <div className={`${wrapperClass} px-6 pt-3 pb-5`}>
+      {title && (
+        <div className="mb-3 pb-2 border-b border-sesame-700">
+          <p className="text-xs font-bold uppercase tracking-widest text-sesame-300">{title}</p>
+          {subtitle && <p className="text-[10px] text-sesame-600 mt-0.5">{subtitle}</p>}
+        </div>
+      )}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1rem 8rem 5rem 1fr',
+          columnGap: '0.75rem',
+          rowGap: '0.5rem',
+          alignItems: 'center',
+        }}
+      >
+        <LineRow op=""  label="Closed Won"  value={closedWonTotal} />
+        <LineRow op="+" label="In Deals"    value={inTotal} />
+        <Divider />
+        <TotalRow label="CTTP"       value={closestToPin}   valueClass="text-matcha"    yyCompare={yyCompare} plan={plan} />
+        <LineRow op="+" label="Most Likely" value={mostLikelyTotal} />
+        <Divider />
+        <TotalRow label="Upside"     value={upside}         valueClass="text-pineapple" yyCompare={yyCompare} plan={plan} />
+      </div>
     </div>
   )
 }

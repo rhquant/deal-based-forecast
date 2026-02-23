@@ -12,6 +12,8 @@ const parseCSV = (text) => {
   })
 }
 
+const NB = (d) => d.deal_type === 'New Business'
+
 export default function App() {
   const [closedWonDeals, setClosedWonDeals] = useState([])
   const [deals, setDeals] = useState([])
@@ -70,11 +72,19 @@ export default function App() {
     })
   }, [deals, sortConfig])
 
-  const closedWonTotal   = closedWonDeals.reduce((s, d) => s + d.arr, 0)
-  const inTotal          = deals.filter(d => d.inToggle).reduce((s, d) => s + d.arr, 0)
-  const mostLikelyTotal  = deals.filter(d => d.bestCaseToggle).reduce((s, d) => s + d.arr, 0)
-  const closestToPin     = closedWonTotal + inTotal
-  const upside           = closestToPin + mostLikelyTotal
+  // — All deals —
+  const closedWonTotal  = closedWonDeals.reduce((s, d) => s + d.arr, 0)
+  const inTotal         = deals.filter(d => d.inToggle).reduce((s, d) => s + d.arr, 0)
+  const mostLikelyTotal = deals.filter(d => d.bestCaseToggle).reduce((s, d) => s + d.arr, 0)
+  const closestToPin    = closedWonTotal + inTotal
+  const upside          = closestToPin + mostLikelyTotal
+
+  // — New Business only —
+  const closedWonNB     = closedWonDeals.filter(NB).reduce((s, d) => s + d.arr, 0)
+  const inNB            = deals.filter(d => d.inToggle && NB(d)).reduce((s, d) => s + d.arr, 0)
+  const mostLikelyNB    = deals.filter(d => d.bestCaseToggle && NB(d)).reduce((s, d) => s + d.arr, 0)
+  const closestToPinNB  = closedWonNB + inNB
+  const upsideNB        = closestToPinNB + mostLikelyNB
 
   const inDeals = deals.filter(d => d.inToggle)
   const bcDeals = deals.filter(d => d.bestCaseToggle)
@@ -97,21 +107,46 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-coconut">
+
+      {/* Page header */}
       <div className="bg-sesame-100 border-b border-sesame-300 px-6 py-4">
         <h1 className="text-base font-bold text-licorice tracking-tight">Q1 Forecast — Closest to the Pin</h1>
         <p className="text-xs text-sesame-500 mt-0.5">Toggle deals In or Best Case to build your call. Totals update in real time.</p>
       </div>
 
-      <ForecastTotals
-        closedWonTotal={closedWonTotal}
-        inTotal={inTotal}
-        closestToPin={closestToPin}
-        mostLikelyTotal={mostLikelyTotal}
-        upside={upside}
-      />
+      {/* Side-by-side bridges */}
+      <div className="flex border-b border-sesame-300">
+        <div className="flex-1 min-w-0">
+          <ForecastTotals
+            title="Q1 Forecast"
+            subtitle="All deal types"
+            wrapperClass="bg-licorice"
+            closedWonTotal={closedWonTotal}
+            inTotal={inTotal}
+            closestToPin={closestToPin}
+            mostLikelyTotal={mostLikelyTotal}
+            upside={upside}
+          />
+        </div>
+        <div className="w-px bg-sesame-700 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <ForecastTotals
+            title="New Business"
+            subtitle="New logos only"
+            wrapperClass="bg-fern"
+            closedWonTotal={closedWonNB}
+            inTotal={inNB}
+            closestToPin={closestToPinNB}
+            mostLikelyTotal={mostLikelyNB}
+            upside={upsideNB}
+          />
+        </div>
+      </div>
 
+      {/* Summary tables */}
       <SummaryTables inDeals={inDeals} bcDeals={bcDeals} />
 
+      {/* Deal table */}
       <div className="pb-8">
         <div className="px-6 py-3 border-b border-sesame-200">
           <h2 className="text-xs font-bold uppercase tracking-widest text-sesame-500">Open Pipeline</h2>

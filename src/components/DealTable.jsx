@@ -8,10 +8,16 @@ const VP_BADGE = {
   'Most Likely': 'bg-sesame-200 text-sesame-700',
 }
 
+const TYPE_BADGE = {
+  'New Business': 'bg-matcha-000 text-shamrock',
+  'Expansion':    'bg-sesame-200 text-sesame-700',
+}
+
 const COLS = [
   { key: 'account_name',     label: 'Account' },
   { key: 'opportunity_name', label: 'Opportunity' },
   { key: 'stage',            label: 'Stage' },
+  { key: 'deal_type',        label: 'Type' },
   { key: 'vp_forecast',      label: 'VP Forecast' },
   { key: 'arr',              label: 'ARR' },
   { key: 'close_date',       label: 'Close Date' },
@@ -72,6 +78,11 @@ export default function DealTable({ deals, sortConfig, onSort, onToggle }) {
               <td className="px-3 py-2 text-sesame-700 whitespace-nowrap">{deal.account_name}</td>
               <td className="px-3 py-2 text-sesame-600 max-w-xs truncate">{deal.opportunity_name}</td>
               <td className="px-3 py-2 text-sesame-600 whitespace-nowrap">{deal.stage}</td>
+              <td className="px-3 py-2 whitespace-nowrap">
+                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_BADGE[deal.deal_type] ?? 'bg-sesame-200 text-sesame-700'}`}>
+                  {deal.deal_type}
+                </span>
+              </td>
               <td className="px-3 py-2 whitespace-nowrap">
                 <span className={`px-2 py-0.5 rounded text-xs font-semibold ${VP_BADGE[deal.vp_forecast] ?? 'bg-sesame-200 text-sesame-700'}`}>
                   {deal.vp_forecast}
