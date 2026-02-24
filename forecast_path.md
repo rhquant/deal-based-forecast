@@ -227,6 +227,117 @@ value === 0          →  $0
 
 ---
 
+## Tab Navigation
+
+The app has two top-level tabs. `activeTab` state lives in `App.jsx`.
+
+| Tab | Route | Description |
+|---|---|---|
+| **Forecast** | `'forecast'` | Original closest-to-the-pin view |
+| **Pipeline Changes** | `'pipeline'` | What changed vs a prior snapshot |
+
+---
+
+## Pipeline Changes Tab
+
+Shows what moved in the open pipeline compared to a prior snapshot (Start of Quarter, Start of Month, or This Week).
+
+### Filters
+
+Three filter rows on a sesame-100 header bar:
+
+| Filter | Values | Type |
+|---|---|---|
+| Compare to (period) | Start of Quarter \| Start of Month \| This Week | Radio pills |
+| Deal Type | All \| New Business \| Expansion | Radio pills |
+| Change Type | All + one pill per type in data | Multi-select pills, brand colors per type |
+
+Period changes trigger a new CSV fetch. Deal Type and Change Type filter the table client-side. The bridge always shows the full unfiltered picture regardless of Deal Type / Change Type filters.
+
+### Pipeline Bridge Chart
+
+Custom SVG horizontal waterfall bridge (no third-party library). Reads left to right: opening snapshot total on the left, each change category as a floating column, current pipeline total on the right.
+
+- **Opening column**: full bar from baseline to snapshot total (licorice)
+- **Change columns**: floating bars — positive deltas extend upward from the running total, negative deltas hang down from it. Only change types with a non-zero net impact are shown.
+- **Closing column**: full bar from baseline to current pipeline total (licorice)
+- **Connectors**: horizontal dashed lines at the running total level linking adjacent columns
+- **Labels**: delta value above each positive bar, below each negative bar
+- **Responsive**: `ResizeObserver` on container div updates SVG width
+- **Net ARR impact by change type**:
+  - New: `+current_arr`
+  - ARR Increase / Decrease / Pushed: `+(current_arr − snapshot_arr)`
+  - Slipped / Closed Won / Closed Lost: `−snapshot_arr`
+  - Active: 0 (not shown)
+
+### Changes Table
+
+Columns: **Change** · Account · Opportunity · Type · Stage · ARR · Close Date · **What changed**
+
+- Change badge is leftmost; Active deals show a blank cell (no badge)
+- ARR shows `current_arr`, falling back to `snapshot_arr` for deals that left the pipeline (Won, Lost, Slipped)
+- Stage and Close Date show current values, falling back to snapshot if current is empty
+- "What changed" is a plain-English summary driven by change type:
+
+| change_type | What changed text |
+|---|---|
+| ARR Increase / Decrease | `ARR $XXK → $XXK` |
+| Slipped / Pushed | `Close date MMM D → MMM D` |
+| New | `Added to pipeline` |
+| Closed Won | `Won` |
+| Closed Lost | `Lost` |
+| Active | `—` |
+
+Default sort: change_type by priority order, then ARR desc within same type.
+
+### Change Type Priority Order
+
+| Priority | change_type | Badge color |
+|---|---|---|
+| 1 | Closed Won | cactus / shamrock |
+| 2 | Closed Lost | sesame-300 / sesame-700 |
+| 3 | Slipped | pineapple / licorice |
+| 4 | Pushed | sesame-200 / sesame-700 |
+| 5 | New | matcha / shamrock |
+| 6 | ARR Increase | matcha-000 / shamrock |
+| 7 | ARR Decrease | pineapple / licorice |
+| 8 | Active | no badge shown |
+
+---
+
+## Pipeline Changes CSVs
+
+Three pre-computed CSVs, one per snapshot period. `change_type` is pre-calculated — no frontend joins.
+
+**Schema** (same for all three):
+
+```
+opportunity_name,account_name,deal_type,snapshot_arr,current_arr,
+snapshot_close_date,current_close_date,snapshot_stage,current_stage,change_type
+```
+
+**Files:**
+
+| File | Period |
+|---|---|
+| `pipeline_changes_soq_placeholder.csv` | Start of Quarter (largest delta set) |
+| `pipeline_changes_som_placeholder.csv` | Start of Month (medium delta set) |
+| `pipeline_changes_sow_placeholder.csv` | Start of Week (all Active — no changes) |
+
+**Notes for new deals** (`change_type = 'New'`): `snapshot_arr = 0`, snapshot dates and stage are empty. Use 4 commas between `current_arr` and `current_stage`:
+
+```
+Name,Account,New Business,0,98000,,,,Negotiation / Review,New
+```
+
+**Notes for Closed Won/Lost** (`current_arr = 0`): `current_stage` is empty. Use `snapshot_stage` followed by two commas:
+
+```
+Name,Account,Expansion,180000,0,2025-03-20,,Negotiation / Review,,Closed Won
+```
+
+---
+
 ## File Structure
 
 ```
@@ -241,15 +352,23 @@ deal-backed-forecast/
 ├── public/
 │   └── data/
 │       ├── closed_won_placeholder.csv
-│       └── open_pipeline_placeholder.csv
+│       ├── open_pipeline_placeholder.csv
+│       ├── pipeline_changes_soq_placeholder.csv   ← Pipeline Changes (SOQ)
+│       ├── pipeline_changes_som_placeholder.csv   ← Pipeline Changes (SOM)
+│       └── pipeline_changes_sow_placeholder.csv   ← Pipeline Changes (SOW)
 └── src/
     ├── main.jsx
     ├── index.css                     # @tailwind directives only
-    ├── App.jsx                       # Root — owns all state, computes totals
+    ├── App.jsx                       # Root — activeTab state + tab bar + conditional render
     └── components/
         ├── ForecastTotals.jsx        # Section 1 — bridge waterfall
         ├── SummaryTables.jsx         # Section 2 — In / BC deal lists
-        └── DealTable.jsx             # Section 3 — sortable pipeline table
+        ├── DealTable.jsx             # Section 3 — sortable pipeline table
+        └── pipeline/
+            ├── PipelineChanges.jsx   # Root of pipeline tab — owns state, fetches CSV
+            ├── PipelineFilters.jsx   # Period + deal type + change type pill filters
+            ├── PipelineBridge.jsx    # Custom SVG horizontal waterfall bridge
+            └── PipelineTable.jsx     # Filterable changes table
 ```
 
 ---

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import ForecastTotals from './components/ForecastTotals'
 import SummaryTables from './components/SummaryTables'
 import DealTable from './components/DealTable'
+import PipelineChanges from './components/pipeline/PipelineChanges'
 
 const parseCSV = (text) => {
   const [headerLine, ...rows] = text.trim().split('\n')
@@ -15,6 +16,7 @@ const parseCSV = (text) => {
 const NB = (d) => d.deal_type === 'New Business'
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('forecast')
   const [closedWonDeals, setClosedWonDeals] = useState([])
   const [deals, setDeals] = useState([])
   const [sortConfig, setSortConfig] = useState({ column: 'arr', direction: 'desc' })
@@ -89,22 +91,6 @@ export default function App() {
   const inDeals = deals.filter(d => d.inToggle)
   const bcDeals = deals.filter(d => d.bestCaseToggle)
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen text-sesame-500 text-sm bg-sesame-100">
-        Loading forecast data…
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen text-red-600 text-sm">
-        Error loading data: {error}
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-coconut">
 
@@ -114,50 +100,85 @@ export default function App() {
         <p className="text-xs text-sesame-500 mt-0.5">Toggle deals In or Best Case to build your call. Totals update in real time.</p>
       </div>
 
-      {/* Side-by-side bridges */}
-      <div className="flex border-b border-sesame-300">
-        <div className="flex-1 min-w-0">
-          <ForecastTotals
-            title="Q1 Forecast"
-            subtitle="All deal types"
-            wrapperClass="bg-licorice"
-            closedWonTotal={closedWonTotal}
-            inTotal={inTotal}
-            closestToPin={closestToPin}
-            mostLikelyTotal={mostLikelyTotal}
-            upside={upside}
-          />
-        </div>
-        <div className="w-px bg-sesame-700 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <ForecastTotals
-            title="New Business"
-            subtitle="New logos only"
-            wrapperClass="bg-fern"
-            closedWonTotal={closedWonNB}
-            inTotal={inNB}
-            closestToPin={closestToPinNB}
-            mostLikelyTotal={mostLikelyNB}
-            upside={upsideNB}
-          />
-        </div>
+      {/* Tab bar */}
+      <div className="flex border-b border-sesame-300 bg-sesame-100">
+        {[['forecast', 'Forecast'], ['pipeline', 'Pipeline Changes']].map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`px-5 py-2.5 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors ${
+              activeTab === id
+                ? 'border-matcha text-licorice'
+                : 'border-transparent text-sesame-500 hover:text-licorice'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Summary tables */}
-      <SummaryTables inDeals={inDeals} bcDeals={bcDeals} />
+      {/* Forecast tab */}
+      {activeTab === 'forecast' && (
+        loading ? (
+          <div className="flex items-center justify-center h-64 text-sesame-500 text-sm bg-sesame-100">
+            Loading forecast data…
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center h-64 text-red-600 text-sm">
+            Error loading data: {error}
+          </div>
+        ) : (
+          <>
+            {/* Side-by-side bridges */}
+            <div className="flex border-b border-sesame-300">
+              <div className="flex-1 min-w-0">
+                <ForecastTotals
+                  title="Q1 Forecast"
+                  subtitle="All deal types"
+                  wrapperClass="bg-licorice"
+                  closedWonTotal={closedWonTotal}
+                  inTotal={inTotal}
+                  closestToPin={closestToPin}
+                  mostLikelyTotal={mostLikelyTotal}
+                  upside={upside}
+                />
+              </div>
+              <div className="w-px bg-sesame-700 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <ForecastTotals
+                  title="New Business"
+                  subtitle="New logos only"
+                  wrapperClass="bg-fern"
+                  closedWonTotal={closedWonNB}
+                  inTotal={inNB}
+                  closestToPin={closestToPinNB}
+                  mostLikelyTotal={mostLikelyNB}
+                  upside={upsideNB}
+                />
+              </div>
+            </div>
 
-      {/* Deal table */}
-      <div className="pb-8">
-        <div className="px-6 py-3 border-b border-sesame-200">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-sesame-500">Open Pipeline</h2>
-        </div>
-        <DealTable
-          deals={sortedDeals}
-          sortConfig={sortConfig}
-          onSort={handleSort}
-          onToggle={toggleDeal}
-        />
-      </div>
+            {/* Summary tables */}
+            <SummaryTables inDeals={inDeals} bcDeals={bcDeals} />
+
+            {/* Deal table */}
+            <div className="pb-8">
+              <div className="px-6 py-3 border-b border-sesame-200">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-sesame-500">Open Pipeline</h2>
+              </div>
+              <DealTable
+                deals={sortedDeals}
+                sortConfig={sortConfig}
+                onSort={handleSort}
+                onToggle={toggleDeal}
+              />
+            </div>
+          </>
+        )
+      )}
+
+      {/* Pipeline Changes tab */}
+      {activeTab === 'pipeline' && <PipelineChanges />}
     </div>
   )
 }

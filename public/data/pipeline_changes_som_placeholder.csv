@@ -1,0 +1,9 @@
+opportunity_name,account_name,deal_type,snapshot_arr,current_arr,snapshot_close_date,current_close_date,snapshot_stage,current_stage,change_type
+Stark Industries Expansion,Stark Industries,Expansion,300000,310000,2025-03-31,2025-03-31,Proposal / Price Quote,Negotiation / Review,ARR Increase
+Wayne Enterprises New Logo,Wayne Enterprises,New Business,195000,195000,2025-03-31,2025-03-31,Negotiation / Review,Negotiation / Review,Active
+Cyberdyne New Logo,Cyberdyne Systems,New Business,145000,145000,2025-03-28,2025-03-28,Proposal / Price Quote,Proposal / Price Quote,Active
+Oscorp Expansion,Oscorp,Expansion,125000,125000,2025-03-31,2025-03-31,Proposal / Price Quote,Proposal / Price Quote,Active
+Soylent Corp New Logo,Soylent Corp,New Business,98000,98000,2025-03-29,2025-03-29,Negotiation / Review,Negotiation / Review,Active
+Weyland-Yutani Renewal,Weyland-Yutani,Expansion,87000,87000,2025-03-25,2025-03-25,Proposal / Price Quote,Proposal / Price Quote,Active
+Nakatomi Trading New Logo,Nakatomi Trading,New Business,0,74000,,,,Proposal / Price Quote,New
+Momcorp Expansion,Momcorp,Expansion,62000,62000,2025-03-28,2025-03-28,Needs Analysis,Needs Analysis,Active
