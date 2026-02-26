@@ -1,9 +1,9 @@
-opportunity_name,account_name,arr,close_date,stage,vp_forecast,deal_type
-Stark Industries Expansion,Stark Industries,310000,2025-03-31,Negotiation / Review,Commit,Expansion
-Wayne Enterprises New Logo,Wayne Enterprises,195000,2025-03-31,Negotiation / Review,Commit,New Business
-Cyberdyne New Logo,Cyberdyne Systems,145000,2025-03-28,Proposal / Price Quote,Best Case,New Business
-Oscorp Expansion,Oscorp,125000,2025-03-31,Proposal / Price Quote,Most Likely,Expansion
-Soylent Corp New Logo,Soylent Corp,98000,2025-03-29,Negotiation / Review,Best Case,New Business
-Weyland-Yutani Renewal,Weyland-Yutani,87000,2025-03-25,Proposal / Price Quote,Most Likely,Expansion
-Nakatomi Trading New Logo,Nakatomi Trading,74000,2025-03-31,Proposal / Price Quote,Best Case,New Business
-Momcorp Expansion,Momcorp,62000,2025-03-28,Needs Analysis,Most Likely,Expansion
+opportunity_name,account_name,arr,close_date,stage,vp_forecast,deal_type,segment
+Stark Industries Expansion,Stark Industries,310000,2025-04-30,Negotiation / Review,Commit,Expansion,Enterprise
+Wayne Enterprises New Logo,Wayne Enterprises,195000,2025-04-25,Negotiation / Review,Commit,New Business,Commercial
+Cyberdyne New Logo,Cyberdyne Systems,145000,2025-03-14,Proposal / Price Quote,Best Case,New Business,Commercial
+Oscorp Expansion,Oscorp,125000,2025-03-31,Proposal / Price Quote,Most Likely,Expansion,Public Sector
+Soylent Corp New Logo,Soylent Corp,98000,2025-03-29,Negotiation / Review,Best Case,New Business,NorCal
+Weyland-Yutani Renewal,Weyland-Yutani,87000,2025-02-20,Proposal / Price Quote,Most Likely,Expansion,Enterprise
+Nakatomi Trading New Logo,Nakatomi Trading,74000,2025-02-14,Proposal / Price Quote,Best Case,New Business,Public Sector
+Momcorp Expansion,Momcorp,62000,2025-04-28,Needs Analysis,Most Likely,Expansion,NorCal

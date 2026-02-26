@@ -1,5 +1,5 @@
-opportunity_name,account_name,arr,close_date,stage,deal_type
-Acme Corp Expansion,Acme Corp,185000,2025-03-28,Closed Won,Expansion
-Globex New Logo,Globex,95000,2025-03-15,Closed Won,New Business
-Initech Renewal Uplift,Initech,120000,2025-03-20,Closed Won,Expansion
-Umbrella Corp New,Umbrella Corp,240000,2025-03-10,Closed Won,New Business
+opportunity_name,account_name,arr,close_date,stage,deal_type,segment
+Acme Corp Expansion,Acme Corp,185000,2025-02-14,Closed Won,Expansion,Commercial
+Globex New Logo,Globex,95000,2025-02-28,Closed Won,New Business,Enterprise
+Initech Renewal Uplift,Initech,120000,2025-03-20,Closed Won,Expansion,NorCal
+Umbrella Corp New,Umbrella Corp,240000,2025-04-10,Closed Won,New Business,Public Sector
