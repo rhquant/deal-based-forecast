@@ -4,6 +4,7 @@ import SummaryTables from './components/SummaryTables'
 import DealTable from './components/DealTable'
 import PipelineChanges from './components/pipeline/PipelineChanges'
 import ForecastFilters from './components/ForecastFilters'
+import RepRollup from './components/RepRollup'
 
 const parseCSV = (text) => {
   const [headerLine, ...rows] = text.trim().split('\n')
@@ -15,6 +16,8 @@ const parseCSV = (text) => {
 }
 
 const NB = (d) => d.deal_type === 'New Business'
+
+const SEGMENTS = ['Commercial', 'Enterprise', 'Public Sector', 'NorCal']
 
 // Fiscal Q1: Feb=M1, Mar=M2, Apr=M3
 const FISCAL_Q_START_MONTH = 1  // 0-indexed JS month for February
@@ -40,6 +43,7 @@ export default function App() {
   const [error, setError] = useState(null)
 
   // Filter state
+  const [searchQuery,     setSearchQuery]     = useState('')
   const [segmentFilter,   setSegmentFilter]   = useState(new Set())
   const [timeGranularity, setTimeGranularity] = useState('quarter')
   const [selectedPeriods, setSelectedPeriods] = useState(new Set())
@@ -160,6 +164,24 @@ export default function App() {
     })
   }, [filteredDeals, sortConfig])
 
+  // Segment rollup (client-side, from filtered arrays)
+  const repRollup = useMemo(() => {
+    const bySegment = (seg) => ({
+      segment: seg,
+      closedWon: filteredClosedWon.filter(d => d.segment === seg).reduce((s, d) => s + d.arr, 0),
+      inArr:     filteredDeals.filter(d => d.segment === seg && d.inToggle).reduce((s, d) => s + d.arr, 0),
+      bcArr:     filteredDeals.filter(d => d.segment === seg && (d.inToggle || d.bestCaseToggle)).reduce((s, d) => s + d.arr, 0),
+    })
+    const rows = SEGMENTS.map(bySegment)
+    const total = {
+      segment:  'North America',
+      closedWon: rows.reduce((s, r) => s + r.closedWon, 0),
+      inArr:     rows.reduce((s, r) => s + r.inArr, 0),
+      bcArr:     rows.reduce((s, r) => s + r.bcArr, 0),
+    }
+    return { total, rows }
+  }, [filteredClosedWon, filteredDeals])
+
   // Totals from filtered arrays
   const closedWonTotal  = filteredClosedWon.reduce((s, d) => s + d.arr, 0)
   const inTotal         = filteredDeals.filter(d => d.inToggle).reduce((s, d) => s + d.arr, 0)
@@ -176,6 +198,15 @@ export default function App() {
 
   const inDeals = filteredDeals.filter(d => d.inToggle)
   const bcDeals = filteredDeals.filter(d => d.bestCaseToggle)
+
+  const visibleDeals = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return sortedDeals
+    return sortedDeals.filter(d =>
+      d.account_name.toLowerCase().includes(q) ||
+      d.opportunity_name.toLowerCase().includes(q)
+    )
+  }, [sortedDeals, searchQuery])
 
   return (
     <div className="min-h-screen bg-coconut">
@@ -226,24 +257,35 @@ export default function App() {
               availableWeeks={availableWeeks}
             />
 
-            {/* P&L bridge */}
-            <ForecastTotals
-              closedWonTotal={closedWonTotal}   inTotal={inTotal}           closestToPin={closestToPin}
-              mostLikelyTotal={mostLikelyTotal} upside={upside}
-              closedWonNB={closedWonNB}         inNB={inNB}                 closestToPinNB={closestToPinNB}
-              mostLikelyNB={mostLikelyNB}       upsideNB={upsideNB}
-            />
+            {/* P&L bridge + segment rollup */}
+            <div className="flex items-stretch border-b border-sesame-300">
+              <ForecastTotals
+                closedWonTotal={closedWonTotal}   inTotal={inTotal}           closestToPin={closestToPin}
+                mostLikelyTotal={mostLikelyTotal} upside={upside}
+                closedWonNB={closedWonNB}         inNB={inNB}                 closestToPinNB={closestToPinNB}
+                mostLikelyNB={mostLikelyNB}       upsideNB={upsideNB}
+              />
+              <div className="w-px bg-sesame-200 my-4 flex-shrink-0" />
+              <RepRollup rollup={repRollup} />
+            </div>
 
             {/* Summary tables */}
             <SummaryTables inDeals={inDeals} bcDeals={bcDeals} />
 
             {/* Deal table */}
             <div className="pb-8">
-              <div className="px-6 py-3 border-b border-sesame-200">
+              <div className="px-6 py-3 border-b border-sesame-200 flex items-center justify-between">
                 <h2 className="text-xs font-bold uppercase tracking-widest text-sesame-500">Open Pipeline</h2>
+                <input
+                  type="text"
+                  placeholder="Search accounts…"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="border border-sesame-300 rounded px-2 py-1 text-xs bg-coconut text-sesame-700 placeholder-sesame-400 w-44 focus:outline-none focus:border-sesame-500"
+                />
               </div>
               <DealTable
-                deals={sortedDeals}
+                deals={visibleDeals}
                 sortConfig={sortConfig}
                 onSort={handleSort}
                 onToggle={toggleDeal}
