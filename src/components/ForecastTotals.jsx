@@ -11,7 +11,6 @@ const fmtYY = (val, compare) => {
   return `${pct >= 0 ? '+' : ''}${pct}% y/y`
 }
 
-// 5-column layout: label | all $ | all y/y | nb $ | nb y/y
 function Row({ label, all, nb, subtotal, total, yyAll, yyNB }) {
   const isAccent = subtotal || total
   const tdBase = `text-xs ${isAccent ? 'font-semibold text-licorice' : 'text-sesame-600'}`
@@ -27,13 +26,13 @@ function Row({ label, all, nb, subtotal, total, yyAll, yyNB }) {
       <td className={`${tdBase} text-right tabular-nums pl-8 whitespace-nowrap py-1`} style={borderStyle}>
         {fmt(all)}
       </td>
-      <td className={`text-[10px] font-normal text-sesame-400 pl-2 whitespace-nowrap py-1 pr-8`} style={borderStyle}>
+      <td className="text-[10px] font-normal text-sesame-400 pl-2 whitespace-nowrap py-1 pr-8" style={borderStyle}>
         {yyAll != null ? fmtYY(all, yyAll) : ''}
       </td>
       <td className={`${tdBase} text-right tabular-nums pl-8 whitespace-nowrap py-1`} style={borderStyle}>
         {fmt(nb)}
       </td>
-      <td className={`text-[10px] font-normal text-sesame-400 pl-2 whitespace-nowrap py-1`} style={borderStyle}>
+      <td className="text-[10px] font-normal text-sesame-400 pl-2 whitespace-nowrap py-1" style={borderStyle}>
         {yyNB != null ? fmtYY(nb, yyNB) : ''}
       </td>
     </tr>
@@ -110,12 +109,12 @@ export default function ForecastTotals({
         <tbody>
           <Row label="Closed Won"           all={closedWonTotal}  nb={closedWonNB} />
           <Row label="In (Commit)"          all={inTotal}         nb={inNB} />
-          <Row label="Closest to Pin"       all={closestToPin}    nb={closestToPinNB} subtotal yyAll={yyCtpAll}  yyNB={yyCtpNB} />
+          <Row label="Deal Backed Commit"   all={closestToPin}    nb={closestToPinNB} subtotal yyAll={yyCtpAll} yyNB={yyCtpNB} />
           <Row label="Most Likely (Upside)" all={mostLikelyTotal} nb={mostLikelyNB} />
-          <Row label="Best Case"            all={upside}          nb={upsideNB}       total   yyAll={yyBestAll} yyNB={yyBestNB} />
+          <Row label="Deal-Backed Forecast" all={upside}          nb={upsideNB}       total   yyAll={yyBestAll} yyNB={yyBestNB} />
           <DashedSeparator />
-          <QuotaRow label="Quota" all={quotaAll}            nb={quotaNB} />
-          <GapRow                 all={upside - quotaAll}   nb={upsideNB - quotaNB}
+          <QuotaRow label="Quota" all={quotaAll}          nb={quotaNB} />
+          <GapRow                 all={upside - quotaAll} nb={upsideNB - quotaNB}
                                   attAll={upside / quotaAll} attNB={upsideNB / quotaNB} />
         </tbody>
       </table>

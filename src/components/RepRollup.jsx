@@ -44,8 +44,8 @@ function RollupRow({ row, isTotal, quota, priorYearCttp }) {
 export default function RepRollup({ rollup, quotaBySegment = {}, yyBySegment = {} }) {
   const { total, rows } = rollup
 
-  const totalQuota      = Object.values(quotaBySegment).reduce((s, q) => s + (q || 0), 0)
-  const totalPriorYear  = Object.values(yyBySegment).reduce((s, v) => s + (v || 0), 0)
+  const totalQuota     = Object.values(quotaBySegment).reduce((s, q) => s + (q || 0), 0)
+  const totalPriorYear = Object.values(yyBySegment).reduce((s, v) => s + (v || 0), 0)
 
   return (
     <div className="bg-coconut px-6 py-5 flex-1">

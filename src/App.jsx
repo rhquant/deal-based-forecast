@@ -1,26 +1,18 @@
 import { useState, useEffect, useMemo } from 'react'
+import ForecastHeadline from './components/ForecastHeadline'
 import ForecastTotals from './components/ForecastTotals'
+import RepRollup from './components/RepRollup'
 import SummaryTables from './components/SummaryTables'
 import DealTable from './components/DealTable'
-import PipelineChanges from './components/pipeline/PipelineChanges'
 import ForecastFilters from './components/ForecastFilters'
-import RepRollup from './components/RepRollup'
+import SideNav from './components/SideNav'
+import AccordionSection from './components/AccordionSection'
+import PipelineChanges from './components/pipeline/PipelineChanges'
 
-const parseCSV = (text) => {
-  const [headerLine, ...rows] = text.trim().split('\n')
-  const headers = headerLine.split(',').map(h => h.trim())
-  return rows.map(row => {
-    const vals = row.split(',').map(v => v.trim())
-    return headers.reduce((obj, h, i) => ({ ...obj, [h]: vals[i] }), {})
-  })
-}
-
-const NB = (d) => d.deal_type === 'New Business'
-
+// Fiscal Q1 starts Feb 1. M1=Feb, M2=Mar, M3=Apr
+const FISCAL_Q_START_MONTH = 1  // 0-based JS month index for February
 const SEGMENTS = ['Commercial', 'Enterprise', 'Public Sector', 'NorCal']
-
-// Fiscal Q1: Feb=M1, Mar=M2, Apr=M3
-const FISCAL_Q_START_MONTH = 1  // 0-indexed JS month for February
+const NB = (d) => d.deal_type === 'New Business'
 
 const getISOWeek = (dateStr) => {
   const d = new Date(dateStr + 'T12:00:00')
@@ -34,16 +26,39 @@ const getMonthKey = (dateStr) =>
 
 const getWeekKey = (dateStr) => `W${getISOWeek(dateStr)}`
 
+const parseCSV = (text) => {
+  const [headerLine, ...rows] = text.trim().split('\n')
+  const headers = headerLine.split(',').map(h => h.trim())
+  return rows.map(row => {
+    const vals = row.split(',').map(v => v.trim())
+    return headers.reduce((obj, h, i) => ({ ...obj, [h]: vals[i] ?? '' }), {})
+  })
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('forecast')
   const [closedWonDeals, setClosedWonDeals] = useState([])
   const [deals, setDeals] = useState([])
   const [sortConfig, setSortConfig] = useState({ column: 'arr', direction: 'desc' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState('forecast')
+
+  // Accordion state
+  const [openSections, setOpenSections] = useState({
+    filters: true,
+    bridge:  true,
+    summary: false,
+    deals:   true,
+  })
+  const toggleSection = (key) =>
+    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }))
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+
   // Filter state
-  const [searchQuery,     setSearchQuery]     = useState('')
   const [segmentFilter,   setSegmentFilter]   = useState(new Set())
   const [timeGranularity, setTimeGranularity] = useState('quarter')
   const [selectedPeriods, setSelectedPeriods] = useState(new Set())
@@ -60,7 +75,7 @@ export default function App() {
           id: i,
           arr: Number(d.arr),
           inToggle: d.vp_forecast === 'Commit',
-          bestCaseToggle: d.vp_forecast === 'Best Case',
+          bestCaseToggle: false,
         }))
         setClosedWonDeals(cw)
         setDeals(op)
@@ -127,31 +142,31 @@ export default function App() {
     return [...seen.entries()].sort(([a], [b]) => a - b).map(([, v]) => v)
   }, [closedWonDeals, deals])
 
-  // Filter predicate (inline to avoid stale closure risk)
+  // Filter predicate
+  const matchesPeriod = (d) => {
+    if (timeGranularity === 'quarter' || selectedPeriods.size === 0) return true
+    if (!d.close_date) return true
+    return selectedPeriods.has(
+      timeGranularity === 'month' ? getMonthKey(d.close_date) : getWeekKey(d.close_date)
+    )
+  }
+
+  // Filtered base arrays
   const filteredClosedWon = useMemo(() =>
-    closedWonDeals.filter(d => {
-      if (segmentFilter.size > 0 && !segmentFilter.has(d.segment)) return false
-      if (timeGranularity !== 'quarter' && selectedPeriods.size > 0 && d.close_date) {
-        const key = timeGranularity === 'month' ? getMonthKey(d.close_date) : getWeekKey(d.close_date)
-        if (!selectedPeriods.has(key)) return false
-      }
-      return true
-    }),
+    closedWonDeals.filter(d =>
+      (segmentFilter.size === 0 || segmentFilter.has(d.segment)) && matchesPeriod(d)
+    ),
     [closedWonDeals, segmentFilter, timeGranularity, selectedPeriods]
   )
 
   const filteredDeals = useMemo(() =>
-    deals.filter(d => {
-      if (segmentFilter.size > 0 && !segmentFilter.has(d.segment)) return false
-      if (timeGranularity !== 'quarter' && selectedPeriods.size > 0 && d.close_date) {
-        const key = timeGranularity === 'month' ? getMonthKey(d.close_date) : getWeekKey(d.close_date)
-        if (!selectedPeriods.has(key)) return false
-      }
-      return true
-    }),
+    deals.filter(d =>
+      (segmentFilter.size === 0 || segmentFilter.has(d.segment)) && matchesPeriod(d)
+    ),
     [deals, segmentFilter, timeGranularity, selectedPeriods]
   )
 
+  // Sorted deal table
   const sortedDeals = useMemo(() => {
     const { column, direction } = sortConfig
     return [...filteredDeals].sort((a, b) => {
@@ -164,32 +179,24 @@ export default function App() {
     })
   }, [filteredDeals, sortConfig])
 
-  // Segment rollup (client-side, from filtered arrays)
-  const repRollup = useMemo(() => {
-    const bySegment = (seg) => ({
-      segment: seg,
-      closedWon: filteredClosedWon.filter(d => d.segment === seg).reduce((s, d) => s + d.arr, 0),
-      inArr:     filteredDeals.filter(d => d.segment === seg && d.inToggle).reduce((s, d) => s + d.arr, 0),
-      bcArr:     filteredDeals.filter(d => d.segment === seg && (d.inToggle || d.bestCaseToggle)).reduce((s, d) => s + d.arr, 0),
-    })
-    const rows = SEGMENTS.map(bySegment)
-    const total = {
-      segment:  'North America',
-      closedWon: rows.reduce((s, r) => s + r.closedWon, 0),
-      inArr:     rows.reduce((s, r) => s + r.inArr, 0),
-      bcArr:     rows.reduce((s, r) => s + r.bcArr, 0),
-    }
-    return { total, rows }
-  }, [filteredClosedWon, filteredDeals])
+  // Search-filtered deals
+  const searchFilteredDeals = useMemo(() => {
+    if (!searchQuery.trim()) return sortedDeals
+    const q = searchQuery.toLowerCase()
+    return sortedDeals.filter(d =>
+      d.account_name?.toLowerCase().includes(q) ||
+      d.opportunity_name?.toLowerCase().includes(q)
+    )
+  }, [sortedDeals, searchQuery])
 
-  // Totals from filtered arrays
+  // All totals
   const closedWonTotal  = filteredClosedWon.reduce((s, d) => s + d.arr, 0)
   const inTotal         = filteredDeals.filter(d => d.inToggle).reduce((s, d) => s + d.arr, 0)
   const mostLikelyTotal = filteredDeals.filter(d => d.bestCaseToggle).reduce((s, d) => s + d.arr, 0)
   const closestToPin    = closedWonTotal + inTotal
   const upside          = closestToPin + mostLikelyTotal
 
-  // New Business only
+  // New Business totals
   const closedWonNB    = filteredClosedWon.filter(NB).reduce((s, d) => s + d.arr, 0)
   const inNB           = filteredDeals.filter(d => d.inToggle && NB(d)).reduce((s, d) => s + d.arr, 0)
   const mostLikelyNB   = filteredDeals.filter(d => d.bestCaseToggle && NB(d)).reduce((s, d) => s + d.arr, 0)
@@ -199,104 +206,125 @@ export default function App() {
   const inDeals = filteredDeals.filter(d => d.inToggle)
   const bcDeals = filteredDeals.filter(d => d.bestCaseToggle)
 
-  const visibleDeals = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    if (!q) return sortedDeals
-    return sortedDeals.filter(d =>
-      d.account_name.toLowerCase().includes(q) ||
-      d.opportunity_name.toLowerCase().includes(q)
+  // Segment rollup
+  const repRollup = useMemo(() => {
+    const bySegment = (seg) => ({
+      segment:   seg,
+      closedWon: filteredClosedWon.filter(d => d.segment === seg).reduce((s, d) => s + d.arr, 0),
+      inArr:     filteredDeals.filter(d => d.segment === seg && d.inToggle).reduce((s, d) => s + d.arr, 0),
+      bcArr:     filteredDeals.filter(d => d.segment === seg && (d.inToggle || d.bestCaseToggle)).reduce((s, d) => s + d.arr, 0),
+    })
+    const rows = SEGMENTS.map(bySegment)
+    const total = {
+      segment:   'North America',
+      closedWon: rows.reduce((s, r) => s + r.closedWon, 0),
+      inArr:     rows.reduce((s, r) => s + r.inArr, 0),
+      bcArr:     rows.reduce((s, r) => s + r.bcArr, 0),
+    }
+    return { total, rows }
+  }, [filteredClosedWon, filteredDeals])
+
+  // Search input for accordion action slot
+  const searchInput = (
+    <input
+      type="text"
+      value={searchQuery}
+      onChange={e => setSearchQuery(e.target.value)}
+      placeholder="Search accounts…"
+      className="text-xs px-2 py-1 rounded border border-sesame-300 bg-coconut text-licorice placeholder-sesame-400 focus:outline-none focus:border-matcha w-36"
+    />
+  )
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-sesame-500 text-sm bg-sesame-100 min-h-screen">
+        Loading forecast data…
+      </div>
     )
-  }, [sortedDeals, searchQuery])
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 text-red-500 text-sm min-h-screen">
+        Error loading data: {error}
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-coconut">
+    <div className="flex">
+      <SideNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Page header */}
-      <div className="bg-sesame-100 border-b border-sesame-300 px-6 py-4">
-        <h1 className="text-base font-bold text-licorice tracking-tight">Q1 Forecast — Closest to the Pin</h1>
-        <p className="text-xs text-sesame-500 mt-0.5">Toggle deals In or Best Case to build your call. Totals update in real time.</p>
-      </div>
+      <main className="flex-1 ml-40 min-h-screen bg-coconut">
+        {/* Page header */}
+        <div className="bg-sesame-100 border-b border-sesame-300 px-6 py-4">
+          <h1 className="text-base font-bold text-licorice tracking-tight">Q1 Forecast — Deal Backed Commit</h1>
+          <p className="text-xs text-sesame-500 mt-0.5">Toggle deals In or Best Case to build your call. Totals update in real time.</p>
+        </div>
 
-      {/* Tab bar */}
-      <div className="flex border-b border-sesame-300 bg-sesame-100">
-        {[['forecast', 'Forecast'], ['pipeline', 'Pipeline Changes']].map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`px-5 py-2.5 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors ${
-              activeTab === id
-                ? 'border-matcha text-licorice'
-                : 'border-transparent text-sesame-500 hover:text-licorice'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Forecast tab */}
-      {activeTab === 'forecast' && (
-        loading ? (
-          <div className="flex items-center justify-center h-64 text-sesame-500 text-sm bg-sesame-100">
-            Loading forecast data…
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center h-64 text-red-600 text-sm">
-            Error loading data: {error}
-          </div>
-        ) : (
+        {activeTab === 'forecast' && (
           <>
-            {/* Filters */}
-            <ForecastFilters
-              segmentFilter={segmentFilter}
-              onSegment={handleSegment}
-              timeGranularity={timeGranularity}
-              onGranularity={handleGranularity}
-              selectedPeriods={selectedPeriods}
-              onPeriod={handlePeriod}
-              availableWeeks={availableWeeks}
-            />
+            <ForecastHeadline upside={upside} upsideNB={upsideNB} />
 
-            {/* P&L bridge + segment rollup */}
-            <div className="flex items-stretch border-b border-sesame-300">
-              <ForecastTotals
-                closedWonTotal={closedWonTotal}   inTotal={inTotal}           closestToPin={closestToPin}
-                mostLikelyTotal={mostLikelyTotal} upside={upside}
-                closedWonNB={closedWonNB}         inNB={inNB}                 closestToPinNB={closestToPinNB}
-                mostLikelyNB={mostLikelyNB}       upsideNB={upsideNB}
+            <AccordionSection
+              title="Filters"
+              open={openSections.filters}
+              onToggle={() => toggleSection('filters')}
+            >
+              <ForecastFilters
+                segmentFilter={segmentFilter}
+                onSegment={handleSegment}
+                timeGranularity={timeGranularity}
+                onGranularity={handleGranularity}
+                selectedPeriods={selectedPeriods}
+                onPeriod={handlePeriod}
+                availableWeeks={availableWeeks}
               />
-              <div className="w-px bg-sesame-200 my-4 flex-shrink-0" />
-              <RepRollup rollup={repRollup} />
-            </div>
+            </AccordionSection>
 
-            {/* Summary tables */}
-            <SummaryTables inDeals={inDeals} bcDeals={bcDeals} />
-
-            {/* Deal table */}
-            <div className="pb-8">
-              <div className="px-6 py-3 border-b border-sesame-200 flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-widest text-sesame-500">Open Pipeline</h2>
-                <input
-                  type="text"
-                  placeholder="Search accounts…"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="border border-sesame-300 rounded px-2 py-1 text-xs bg-coconut text-sesame-700 placeholder-sesame-400 w-44 focus:outline-none focus:border-sesame-500"
+            <AccordionSection
+              title="Q1 Forecast"
+              open={openSections.bridge}
+              onToggle={() => toggleSection('bridge')}
+            >
+              <div className="flex items-stretch">
+                <ForecastTotals
+                  closedWonTotal={closedWonTotal}   inTotal={inTotal}           closestToPin={closestToPin}
+                  mostLikelyTotal={mostLikelyTotal} upside={upside}
+                  closedWonNB={closedWonNB}         inNB={inNB}                 closestToPinNB={closestToPinNB}
+                  mostLikelyNB={mostLikelyNB}       upsideNB={upsideNB}
                 />
+                <div className="w-px bg-sesame-200 my-4 flex-shrink-0" />
+                <RepRollup rollup={repRollup} />
               </div>
+            </AccordionSection>
+
+            <AccordionSection
+              title="Summary"
+              open={openSections.summary}
+              onToggle={() => toggleSection('summary')}
+            >
+              <SummaryTables inDeals={inDeals} bcDeals={bcDeals} />
+            </AccordionSection>
+
+            <AccordionSection
+              title="Open Pipeline"
+              open={openSections.deals}
+              onToggle={() => toggleSection('deals')}
+              action={searchInput}
+            >
               <DealTable
-                deals={visibleDeals}
+                deals={searchFilteredDeals}
                 sortConfig={sortConfig}
                 onSort={handleSort}
                 onToggle={toggleDeal}
               />
-            </div>
+            </AccordionSection>
           </>
-        )
-      )}
+        )}
 
-      {/* Pipeline Changes tab */}
-      {activeTab === 'pipeline' && <PipelineChanges />}
+        {activeTab === 'pipeline' && <PipelineChanges />}
+      </main>
     </div>
   )
 }
